@@ -41,4 +41,9 @@ LOCATIONS = {
         "region": "The Stormlands",
         "fact": "Seat of House Baratheon, famed for walls that are said to withstand any storm.",
     },
+    "sunspear": {
+        "name": "Sunspear",
+        "region": "Dorne",
+        "fact": "Seat of House Martell, a walled stronghold surrounded by vast, unforgiving deserts.",
+    },
 }
