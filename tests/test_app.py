@@ -36,8 +36,7 @@ class WesterosApiTests(unittest.TestCase):
     def test_healthz(self):
         status, body = self.get("/healthz")
         self.assertEqual(status, 200)
-        # self.assertEqual(body["status"], "ok")
-        self.assertEqual(body["status"], "fine")
+        self.assertEqual(body["status"], "ok")
 
     def test_list_locations(self):
         status, body = self.get("/locations")
