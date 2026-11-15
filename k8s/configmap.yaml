@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mine-config
+data:
+  PORT: "8080"
+  # Python reads this at startup to write logs without buffering.
+  PYTHONUNBUFFERED: "1"
