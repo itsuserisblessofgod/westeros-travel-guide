@@ -85,3 +85,53 @@ python3 mark_m3.py --repo https://github.com/itsuserisblessofgod/westeros-travel
 
 The marker is supplied by `inf345/inf345-week6-lab`. Its `--offline` option checks
 files only; it does not prove that the image is public or runs successfully.
+
+## GitOps deployment (M5)
+
+Argo CD follows `main` and deploys the plain YAML files in `k8s/` into the
+`default` namespace. Its Application is defined in `argocd/application.yaml`.
+Automated sync applies changes from Git, `selfHeal` repairs manual changes,
+and `prune` removes tracked resources that have been removed from Git.
+The `app-secret` Secret is created separately on the cluster.
+
+CI tests, builds, scans, and publishes the image. To deploy a published version,
+change the full commit SHA in `k8s/deployment.yaml` and merge the change into
+`main`. Keep each image bump in its own commit so it can be reverted independently.
+
+The `M5 check` pull-request workflow runs the official marker against the pushed
+commit in a temporary kind cluster on the GitHub runner. Check its output for
+`SCORE: 100/100` before merging.
+
+## Rollback
+
+Argo CD deploys the `k8s/` folder from the `main` branch. To restore the previous
+image, revert the image-bump commit and merge the revert into `main`.
+Start from an up-to-date `main`, then create a rollback branch:
+
+```bash
+git switch main
+git pull --ff-only
+git switch -c rollback-image
+git log --oneline -- k8s/deployment.yaml
+git revert <image-bump-commit-sha>
+git push -u origin rollback-image
+```
+
+Open a pull request from `rollback-image` to `main` and merge it. For a dedicated
+image-bump PR merged with a merge commit, use `git revert -m 1 <merge-commit-sha>`.
+For its individual image-bump commit or a squashed image-bump commit, use
+`git revert <commit-sha>`.
+
+Argo CD normally detects the change within three minutes. To request an immediate
+refresh and inspect the result:
+
+```bash
+kubectl -n argocd annotate application westeros-travel-guide argocd.argoproj.io/refresh=normal --overwrite
+kubectl -n argocd get application westeros-travel-guide
+kubectl get deployment mine -o jsonpath='{.spec.template.spec.containers[0].image}'
+```
+
+Wait for `Synced` and `Healthy`, and confirm that the image has the previous SHA.
+A `kubectl rollout undo` would be overwritten by self-healing while Git still
+specifies the newer image. Reverting in Git preserves the deployment and rollback
+history.
