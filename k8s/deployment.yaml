@@ -18,7 +18,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: app
-          image: ghcr.io/itsuserisblessofgod/westeros-travel-guide:6f3d7597e766cfdf9d6aaffd0b6ff9c809999d07
+          image: ghcr.io/itsuserisblessofgod/westeros-travel-guide:cc40111266a7f78330e47841cad428748d9fbf62
           ports:
             - name: http
               containerPort: 8080
