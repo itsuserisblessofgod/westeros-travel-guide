@@ -58,6 +58,36 @@ jobs:
           python-version: "3.14"
       - run: python -m pip install --quiet pyyaml==6.0.3
 
+      - name: Retry CRD waits while their status is initializing
+        run: |
+          mkdir -p "$RUNNER_TEMP/m5-bin"
+          cat > "$RUNNER_TEMP/m5-bin/kubectl" <<'PY'
+          #!/usr/bin/env python3
+          import os
+          import subprocess
+          import sys
+          import time
+
+          command = ["/usr/local/bin/kubectl", *sys.argv[1:]]
+          crd_wait = "wait" in sys.argv and any(
+              arg.startswith("crd/") for arg in sys.argv[1:]
+          )
+          if not crd_wait:
+              os.execv(command[0], command)
+
+          for attempt in range(5):
+              result = subprocess.run(command, capture_output=True, text=True)
+              initializing = ".status.conditions accessor error: <nil>" in result.stderr
+              if result.returncode == 0 or not initializing or attempt == 4:
+                  sys.stdout.write(result.stdout)
+                  sys.stderr.write(result.stderr)
+                  sys.exit(result.returncode)
+              print("CRD status is initializing; retrying kubectl wait in 2s", file=sys.stderr)
+              time.sleep(2)
+          PY
+          chmod +x "$RUNNER_TEMP/m5-bin/kubectl"
+          echo "$RUNNER_TEMP/m5-bin" >> "$GITHUB_PATH"
+
       - name: Run the M5 marker - static and live
         run: |
           curl -fsSLO https://raw.githubusercontent.com/inf345/inf345-week10-lab/main/mark_m5.py
